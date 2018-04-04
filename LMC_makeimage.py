@@ -22,7 +22,7 @@ name="LMC"
 datastore = DataStore.from_dir("/Users/asinha/HESS_newbkg") 
 src=SkyCoord.from_name(name)
 sep=SkyCoord.separation(src,datastore.obs_table.pointing_radec)
-Radius=8
+Radius=10
 srcruns=(datastore.obs_table[sep<Radius*u.deg]) 
 obsid=srcruns['OBS_ID'].data
 srclist=datastore.obs_list(obsid)
@@ -43,7 +43,7 @@ print("%s observations within %.1f deg from target (%.2f,%.2f)"%(len(mylist),Rad
 print("Total observation duration is",total_time.to(u.hour))
 
 ref_image = SkyImage.empty(
-    nxpix=800, nypix=800, binsz=0.01,
+    nxpix=400, nypix=400, binsz=0.05,
     xref=src.galactic.l.value, yref=src.galactic.b.value,
     coordsys='GAL', proj='TAN',
 )
@@ -87,6 +87,59 @@ image_estimator = IACTBasicImageEstimator(
     background_estimator=bkg_estimator,
     exclusion_mask=exclusion_mask)
 
+"""
+images=image_estimator.run_indiv(mylist)
+
+backnorm=[]
+for im in images:
+    backnorm.append(im["background"].meta['NORM'])
+
 images = image_estimator.run(mylist)
 images.names
+
+print("Total number of counts",images[0].data.sum())
+print("Total number of excess events",images[3].data.sum())
+
+fermi=SkyImage.read("FDA16.fits")
+fermi_rep=fermi.reproject(ref_image)
+
+#Make sure that the exclusion mask properly excludes all sources
+
+masked_excess = SkyImage.empty_like(images['excess'])
+masked_excess.data = images['excess'].data * exclusion_mask.data
+masked_excess.plot(cmap='viridis',stretch='sqrt',add_cbar=True)
+
+plt.hist(masked_excess.data.flatten(),bins=100,log=True)
+
+#smooth
+
+excess_smooth=images[3].smooth(radius=0.5*u.deg)
+excess_smooth.show()
+
+counts_smooth=images[0].smooth(radius=0.5*u.deg)
+counts_smooth.show()
+
+#cutout
+
+excess_cut=excess_smooth.cutout(
+    position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
+    size=(9*u.deg, 9*u.deg))
+
+excess_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
+
+counts_cut=counts_smooth.cutout(
+    position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
+    size=(9*u.deg, 9*u.deg))
+
+counts_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
+
+fermi_cutout=fermi_rep.cutout(
+    position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
+    size=(9*u.deg, 9*u.deg))
+
+fig, ax, _ = excess_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
+ax.contour(fermi_cutout.data, cmap='Blues')
+
+
+"""
 
