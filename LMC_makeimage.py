@@ -87,58 +87,62 @@ image_estimator = IACTBasicImageEstimator(
     background_estimator=bkg_estimator,
     exclusion_mask=exclusion_mask)
 
-"""
-images=image_estimator.run_indiv(mylist)
 
-backnorm=[]
-for im in images:
-    backnorm.append(im["background"].meta['NORM'])
+def indiv():
 
-images = image_estimator.run(mylist)
-images.names
+    images=image_estimator.run_indiv(mylist)
 
-print("Total number of counts",images[0].data.sum())
-print("Total number of excess events",images[3].data.sum())
+    backnorm=[]
+    for im in images:
+        backnorm.append(im["background"].meta['NORM'])
 
-fermi=SkyImage.read("FDA16.fits")
-fermi_rep=fermi.reproject(ref_image)
+def summed():
 
-#Make sure that the exclusion mask properly excludes all sources
+    comp_image = image_estimator.run(mylist)
+    comp_image.names
 
-masked_excess = SkyImage.empty_like(images['excess'])
-masked_excess.data = images['excess'].data * exclusion_mask.data
-masked_excess.plot(cmap='viridis',stretch='sqrt',add_cbar=True)
+    print("Total number of counts",images[0].data.sum())
+    print("Total number of excess events",images[3].data.sum())
 
-plt.hist(masked_excess.data.flatten(),bins=100,log=True)
+    fermi=SkyImage.read("FDA16.fits")
+    fermi_rep=fermi.reproject(ref_image)
 
-#smooth
+    #Make sure that the exclusion mask properly excludes all sources
 
-excess_smooth=images[3].smooth(radius=0.5*u.deg)
-excess_smooth.show()
+    masked_excess = SkyImage.empty_like(images['excess'])
+    masked_excess.data = comp_image['excess'].data * exclusion_mask.data
+    masked_excess.plot(cmap='viridis',stretch='sqrt',add_cbar=True)
 
-counts_smooth=images[0].smooth(radius=0.5*u.deg)
-counts_smooth.show()
+    plt.hist(masked_excess.data.flatten(),bins=100,log=True)
 
-#cutout
+    #smooth
 
-excess_cut=excess_smooth.cutout(
-    position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
-    size=(9*u.deg, 9*u.deg))
+    excess_smooth=comp_image.smooth(radius=0.5*u.deg)
+    excess_smooth.show()
 
-excess_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
+    counts_smooth=comp_image.smooth(radius=0.5*u.deg)
+    counts_smooth.show()
 
-counts_cut=counts_smooth.cutout(
-    position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
-    size=(9*u.deg, 9*u.deg))
+    #cutout
 
-counts_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
+    excess_cut=excess_smooth.cutout(
+        position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
+        size=(9*u.deg, 9*u.deg))
 
-fermi_cutout=fermi_rep.cutout(
-    position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
-    size=(9*u.deg, 9*u.deg))
+    excess_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
 
-fig, ax, _ = excess_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
-ax.contour(fermi_cutout.data, cmap='Blues')
+    counts_cut=counts_smooth.cutout(
+        position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
+        size=(9*u.deg, 9*u.deg))
+
+    counts_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
+
+    fermi_cutout=fermi_rep.cutout(
+        position=SkyCoord(src.galactic.l.value, src.galactic.b.value, unit='deg', frame='galactic'),
+        size=(9*u.deg, 9*u.deg))
+
+    fig, ax, _ = excess_cut.plot(cmap='viridis',add_cbar=True,stretch='sqrt')
+    ax.contour(fermi_cutout.data, cmap='Blues')
 
 
 """
