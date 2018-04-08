@@ -15,6 +15,8 @@ from gammapy.data import DataStore
 from gammapy.image import SkyImage, IACTBasicImageEstimator, SkyImageList
 from gammapy.background import FoVBackgroundEstimator
 
+from importlib import reload
+
 datastore = DataStore.from_dir("/Users/asinha/HESS_newbkg")
 name="LMC"
 src=SkyCoord.from_name(name)
@@ -64,6 +66,20 @@ image_estimator = IACTBasicImageEstimator(
 
 
 images=image_estimator.run_indiv(mylist)
+
+fermi="FDA16.fits"
+diffuse=SkyImage.read(fermi)
+diffuse_rep=diffuse.reproject(ref_image)
+
+#make exclusion and cutouts
+
+exc_list=[]
+diffuse_list=[]
+
+for i in range(len(mylist)):
+    exc_list.append(image_estimator._cutout_observation(exclusion_mask,mylist[i]))
+    diffuse_list.append(image_estimator._cutout_observation(diffuse_rep,mylist[i]))
+
 backnorm=[]
 for im in images:
     backnorm.append(im["background"].meta['NORM'])
